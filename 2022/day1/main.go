@@ -11,7 +11,7 @@ import (
 func main() {
 	var inventories = make(map[int]int)
 
-	file, err := os.Open("../inputs/day1_input.txt")
+	file, err := os.Open("../inputs/day1.txt")
 	if err != nil {
 		fmt.Println(err)
 	}
