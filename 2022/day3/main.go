@@ -8,40 +8,16 @@ import (
 	"unicode"
 )
 
-func intersection(arr1, arr2 []string) (intersect []string) {
+func intersection(foo, bar []string) (intersect []string) {
 	m := make(map[string]bool)
 
-	for _, item := range arr1 {
-		m[item] = true
+	for _, item := range foo {
+		m[string(item)] = true
 	}
 
-	for _, item := range arr2 {
-		if _, ok := m[item]; ok {
-			intersect = append(intersect, item)
-			break
-		}
-	}
-	return
-}
-
-func triple_intersect(string1, string2, string3 string) (intersect []string) {
-	m1 := make(map[string]bool)
-	m2 := make(map[string]bool)
-
-	for _, item := range string1 {
-		m1[string(item)] = true
-	}
-
-	for _, item := range string2 {
-		if _, ok := m1[string(item)]; ok {
-			m2[string(item)] = true
-		}
-	}
-
-	for _, item := range string3 {
-		if _, ok := m2[string(item)]; ok {
+	for _, item := range bar {
+		if _, ok := m[string(item)]; ok {
 			intersect = append(intersect, string(item))
-			break
 		}
 	}
 	return
@@ -76,8 +52,8 @@ func main() {
 
 		pocket1 := sacks[0:limit]
 		pocket2 := sacks[limit:len(rucksack)]
-		letter := intersection(pocket1, pocket2)
-		priority_total += priority[letter[0]]
+		letter := string(intersection(pocket1, pocket2)[0])
+		priority_total += priority[letter]
 
 	}
 
@@ -89,9 +65,12 @@ func main() {
 	}
 
 	group_priority_total := 0
-	for _, group := range elf_groups {
-		letter := triple_intersect(group[0], group[1], group[2])
-		group_priority_total += priority[letter[0]]
+	for _, rucksack := range elf_groups {
+		rucksack1 := strings.Split(rucksack[0], "")
+		rucksack2 := strings.Split(rucksack[1], "")
+		rucksack3 := strings.Split(rucksack[2], "")
+		letter := string(intersection(intersection(rucksack1, rucksack2), rucksack3)[0])
+		group_priority_total += priority[letter]
 	}
 
 	fmt.Printf("Group Badge Priority Total: %d\n", group_priority_total)
