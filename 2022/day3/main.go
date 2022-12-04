@@ -57,6 +57,10 @@ func main() {
 
 	}
 
+	if err := scanner.Err(); err != nil {
+		fmt.Println(err)
+	}
+
 	fmt.Printf("Priority Total: %d\n", priority_total)
 
 	var elf_groups [][]string
