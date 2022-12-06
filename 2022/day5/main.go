@@ -62,17 +62,10 @@ func cratemover_9001(containers_map map[int][]string, instructions []string) map
 	}
 	return containers_map
 }
-func main() {
-	file, err := os.ReadFile("../inputs/day5.txt")
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	containers_set := strings.Split(string(file), "\n\n")[0]
-	instruction_set := strings.Split(string(file), "\n\n")[1]
+func generate_containers_map(containers_set string, containers_map map[int][]string) map[int][]string {
 
-	var containers_map = make(map[int][]string)
-	container_rows := strings.Split(string(containers_set), "\n")
+	container_rows := strings.Split(containers_set, "\n")
 	stack_count_row := strings.Replace(container_rows[len(container_rows)-1], " ", "", -1)
 	stack_count := len(strings.Split(stack_count_row, ""))
 
@@ -82,10 +75,10 @@ func main() {
 	}
 
 	for i := len(container_rows) - 2; i >= 0; i-- {
-		line := strings.Split(string(container_rows[i]), "")
+		line := strings.Split(container_rows[i], "")
 		var containers []string
 		for i := 1; i < len(line); i += 4 {
-			containers = append(containers, string(line[i]))
+			containers = append(containers, line[i])
 		}
 		for j := 0; j < len(containers); j++ {
 			if containers[j] != " " {
@@ -95,14 +88,12 @@ func main() {
 			}
 		}
 	}
+	return containers_map
+}
 
-	instructions := strings.Split(string(instruction_set), "\n")
+func generate_output(containers_map map[int][]string) (containers string) {
 
-	// ------------------------------------------------------------------ //
-	// Part 1
-	// ------------------------------------------------------------------ //
-	containers_map = cratemover_9000(containers_map, instructions)
-
+	var top_containers []string
 	keys := make([]int, 0, len(containers_map))
 
 	for k := range containers_map {
@@ -111,48 +102,43 @@ func main() {
 
 	sort.Ints(keys)
 
-	fmt.Println("---Part 1---")
 	for _, stack := range keys {
 		if len(containers_map[stack]) > 0 {
 			containers := containers_map[stack]
 			top_container := containers[len(containers)-1]
-			fmt.Printf("Stack %d: %s\n", stack, top_container)
+			top_containers = append(top_containers, top_container)
 		}
 	}
 
+	containers = strings.Join(top_containers, "")
+
+	return
+}
+
+func main() {
+
+	file, err := os.ReadFile("../inputs/day5.txt")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var containers_map = make(map[int][]string)
+
+	containers_set := strings.Split(string(file), "\n\n")[0]
+	instruction_set := strings.Split(string(file), "\n\n")[1]
+	instructions := strings.Split(string(instruction_set), "\n")
+
+	// ------------------------------------------------------------------ //
+	// Part 1
+	// ------------------------------------------------------------------ //
+	containers_map = generate_containers_map(containers_set, containers_map)
+	containers_map = cratemover_9000(containers_map, instructions)
+	fmt.Println(generate_output(containers_map))
 	// ------------------------------------------------------------------ //
 	// Part 2
 	// ------------------------------------------------------------------ //
-
-	// Rebuild Container Map
-	for i := 1; i <= stack_count; i++ {
-		var containers []string
-		containers_map[i] = containers
-	}
-
-	for i := len(container_rows) - 2; i >= 0; i-- {
-		line := strings.Split(string(container_rows[i]), "")
-		var containers []string
-		for i := 1; i < len(line); i += 4 {
-			containers = append(containers, string(line[i]))
-		}
-		for j := 0; j < len(containers); j++ {
-			if containers[j] != " " {
-				container_row := containers_map[j+1]
-				container_row = append(container_row, containers[j])
-				containers_map[j+1] = container_row
-			}
-		}
-	}
-
+	containers_map = generate_containers_map(containers_set, containers_map)
 	containers_map = cratemover_9001(containers_map, instructions)
-
-	fmt.Printf("\n---Part 2---\n")
-	for _, stack := range keys {
-		if len(containers_map[stack]) > 0 {
-			containers := containers_map[stack]
-			top_container := containers[len(containers)-1]
-			fmt.Printf("Stack %d: %s\n", stack, top_container)
-		}
-	}
+	fmt.Println(generate_output(containers_map))
 }
