@@ -18,7 +18,9 @@ func TestPart1(t *testing.T) {
 	var dir_sizes = make(map[string]int)
 	lines := strings.Split(string(file), "\n")
 	root := command_parse(lines)
-	dir_sizes = dir_traversal(&root, 0, dir_sizes)
+
+	var pdirs = []string{}
+	dir_sizes = dir_traversal(&root, pdirs, 0, dir_sizes)
 
 	actual := calculate_total_size(dir_sizes)
 
@@ -27,35 +29,25 @@ func TestPart1(t *testing.T) {
 	}
 }
 
-// func TestPart2(t *testing.T) {}
-/*
 func TestPart2(t *testing.T) {
 
-	file, err := os.Open("../test_inputs/day6.txt")
-
+	file, err := os.ReadFile("../test_inputs/day7.txt")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	defer file.Close()
+	var expectedOutput int = 24933642
+	var dir_sizes = make(map[string]int)
+	lines := strings.Split(string(file), "\n")
+	root := command_parse(lines)
 
-	scanner := bufio.NewScanner(file)
+	var pdirs = []string{}
+	dir_sizes = dir_traversal(&root, pdirs, 0, dir_sizes)
 
-	var expectedOutput = []int{19, 23, 23, 29, 26}
-	var delimeter int = 14
-	var i = 0
-	var count int
-	for scanner.Scan() {
-		count = stream_scanner(scanner.Text(), delimeter)
+	calculate_total_size(dir_sizes)
+	actual := (download_filespace(70000000, 30000000, dir_sizes))
 
-		if count != expectedOutput[i] {
-			t.Errorf("Expected: %d, Actual: %d", expectedOutput[i], count)
-		}
-		i++
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Println(err)
+	if actual != expectedOutput {
+		t.Errorf("Expected: %d, Actual: %d", expectedOutput, actual)
 	}
 }
-*/

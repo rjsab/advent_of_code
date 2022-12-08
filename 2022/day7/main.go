@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -24,6 +24,7 @@ func file_size(files []File) (size int) {
 	for _, files := range files {
 		size += files.Size
 	}
+
 	return
 }
 
@@ -32,19 +33,44 @@ func calculate_total_size(dir_sizes map[string]int) (total_size int) {
 	total_size = 0
 	for _, size := range dir_sizes {
 		if size <= 100000 {
-			//fmt.Printf("%s: %d\n", dir, size)
 			total_size += size
 		}
 	}
+
+	return
+}
+
+func download_filespace(total_fs_size int, space_needed int, dir_sizes map[string]int) (size int) {
+
+	total_fs_free := total_fs_size - dir_sizes["_/"]
+	total_needed := space_needed - total_fs_free
+
+	keys := make([]string, 0, len(dir_sizes))
+
+	for key := range dir_sizes {
+		keys = append(keys, key)
+	}
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return dir_sizes[keys[i]] < dir_sizes[keys[j]]
+	})
+
+	for _, dir := range keys {
+		if dir_sizes[dir] >= total_needed {
+			size = dir_sizes[dir]
+			break
+		}
+	}
+
 	return
 }
 
 func dir_traversal(dir *Dir, pdirs []string, size int, dir_sizes map[string]int) map[string]int {
 
-	fmt.Println(dir.Name, pdirs)
+	index := dir.Parentdir + "_" + dir.Name
 	if len(dir.Childfiles) > 0 {
 		size = file_size(dir.Childfiles)
-		dir_sizes[dir.Name] = size
+		dir_sizes[index] = size
 
 		if len(pdirs) > 0 {
 			for _, dir := range pdirs {
@@ -52,14 +78,9 @@ func dir_traversal(dir *Dir, pdirs []string, size int, dir_sizes map[string]int)
 			}
 		}
 	}
-	if dir.Parentdir == "" {
-		dir_sizes["/"] = dir_sizes[dir.Parentdir] + size
-	} else {
-		dir_sizes[dir.Parentdir] = dir_sizes[dir.Parentdir] + size
-	}
 
 	if len(dir.Childdirs) > 0 {
-		pdirs = append(pdirs, dir.Name)
+		pdirs = append(pdirs, index)
 		for _, child_dirs := range dir.Childdirs {
 			dir_traversal(child_dirs, pdirs, size, dir_sizes)
 		}
@@ -70,33 +91,14 @@ func dir_traversal(dir *Dir, pdirs []string, size int, dir_sizes map[string]int)
 	return dir_sizes
 }
 
-func dir_traverse(root *Dir, size int, dir_sizes map[string]int) map[string]int {
+func dir_down(current_dir *Dir, dest string) *Dir {
 	queue := make([]*Dir, 0)
-	queue = append(queue, root)
+	queue = append(queue, current_dir)
 	for len(queue) > 0 {
 		next_dir := queue[0]
 		queue = queue[1:]
-		fmt.Printf("Dir name: %s\n", next_dir.Name)
-		if len(next_dir.Childfiles) > 0 {
-			size = file_size(next_dir.Childfiles)
-			//current_dir_size
-			dir_sizes[next_dir.Name] = size
-		}
-		if len(next_dir.Childdirs) > 0 {
-			queue = append(queue, next_dir.Childdirs...)
-		}
-		fmt.Println(queue)
-	}
-	return dir_sizes
-}
 
-func change_dir(root *Dir, dest, parentdir string) *Dir {
-	queue := make([]*Dir, 0)
-	queue = append(queue, root)
-	for len(queue) > 0 {
-		next_dir := queue[0]
-		queue = queue[1:]
-		if next_dir.Name == dest && next_dir.Parentdir == parentdir {
+		if (next_dir.Name == dest) && (next_dir.Parentdir == current_dir.Name) {
 			return next_dir
 		}
 		if len(next_dir.Childdirs) > 0 {
@@ -113,8 +115,10 @@ func command_parse(commands []string) Dir {
 	}
 
 	current_dir := &root
+	past_dirs := make([]*Dir, 0)
+	past_dirs = append(past_dirs, current_dir)
+
 	for i := 0; i < len(commands); i++ {
-		// Part 1
 		line_parse := strings.Split(commands[i], " ")
 		var command string
 		if line_parse[0] == "$" {
@@ -122,19 +126,19 @@ func command_parse(commands []string) Dir {
 
 			switch command {
 			case "cd":
-				//change dir
 				dest := line_parse[2]
 				switch dest {
 				case "/":
 					break
 				case "..":
-					if current_dir.Parentdir == "" {
-						current_dir = change_dir(&root, "/", "")
-					} else {
-						current_dir = change_dir(&root, current_dir.Parentdir, current_dir.Parentdir)
+					if current_dir.Name != "/" {
+						n := len(past_dirs) - 1
+						past_dirs = past_dirs[:n]
+						current_dir = past_dirs[len(past_dirs)-1]
 					}
 				default:
-					current_dir = change_dir(&root, dest, current_dir.Parentdir)
+					current_dir = dir_down(current_dir, dest)
+					past_dirs = append(past_dirs, current_dir)
 				}
 			case "ls":
 				//read next lines until line starts with $ again
@@ -168,12 +172,11 @@ func main() {
 	lines := strings.Split(string(file), "\n")
 	root := command_parse(lines)
 
-	jsonF, _ := json.MarshalIndent(&root, "", " ")
-	fmt.Println(string(jsonF))
 	var pdirs = []string{}
-	dir_sizes1 := dir_traversal(&root, pdirs, 0, dir_sizes)
-	//dir_sizes2 := dir_traverse(&root, 0, dir_sizes)
+	dir_sizes = dir_traversal(&root, pdirs, 0, dir_sizes)
 
-	fmt.Println(calculate_total_size(dir_sizes1))
-	//fmt.Println(calculate_total_size(dir_sizes2))
+	total_file_size := calculate_total_size(dir_sizes)
+	fmt.Println(total_file_size)
+
+	fmt.Println(download_filespace(70000000, 30000000, dir_sizes))
 }
