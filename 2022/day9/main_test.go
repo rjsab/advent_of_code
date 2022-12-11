@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"testing"
@@ -16,12 +15,18 @@ func TestPart1(t *testing.T) {
 
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	gameboard := play_game(file, 10)
 
-	for scanner.Scan() {
-		actual := follow_tail(scanner.Text(), game_board)
+	fmt.Println()
+	for _, y := range gameboard {
+		for _, x := range y {
+			fmt.Printf("%s  ", x)
+		}
+		fmt.Println()
 	}
-	expectedOutput := 13
+
+	actual := calculate_tail_pos(&gameboard)
+	expectedOutput := 36
 
 	if actual != expectedOutput {
 		t.Errorf("Expected: %d, Actual: %d", expectedOutput, actual)

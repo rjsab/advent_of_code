@@ -9,101 +9,97 @@ import (
 	"strings"
 )
 
-type Head struct {
+type Piece struct {
 	x int
 	y int
 }
 
-type Tail struct {
-	x int
-	y int
+func calculate_tail_pos(gameboard *[][]string) (count int) {
+	for _, y := range *gameboard {
+		for _, x := range y {
+			if x == "*" {
+				count++
+			}
+		}
+	}
+	return
 }
 
-func draw_board(head *Head, tail *Tail, gameboard *[][]string, direction string, spaces int) {
+func draw_board(pieces *[]Piece, gameboard *[][]string, direction string, spaces int) {
+	head := (*pieces)[0]
 	switch direction {
 	case "U":
 		rows := head.y - spaces
 		if rows < 0 {
-			draw_cols := []string{}
-			for x := 0; x < len((*gameboard)[head.x]); x++ {
-				draw_cols = append(draw_cols, "+")
-			}
+			new_rows := [][]string{}
 			for y := 0; y < int(math.Abs(float64(rows))); y++ {
-				*gameboard = append([][]string{draw_cols}, *gameboard...)
+				new_cols := []string{}
+				for x := 0; x < len((*gameboard)[head.y]); x++ {
+					new_cols = append(new_cols, ".")
+				}
+				new_rows = append(new_rows, new_cols)
 			}
-			head.y = head.y + int(math.Abs(float64(rows)))
-			tail.y = tail.y + int(math.Abs(float64(rows)))
+
+			*gameboard = append(new_rows, (*gameboard)...)
+
+			for i := range *pieces {
+				(*pieces)[i].y = (*pieces)[i].y + int(math.Abs(float64(rows)))
+			}
 		}
 	case "D":
 		rows := (head.y + spaces) - (len(*gameboard) - 1)
 		if rows > 0 {
-			draw_cols := []string{}
-			for x := 0; x < len((*gameboard)[0]); x++ {
-				draw_cols = append(draw_cols, "+")
-			}
+			new_rows := [][]string{}
 			for y := 0; y < rows; y++ {
-				*gameboard = append(*gameboard, [][]string{draw_cols}...)
+				new_cols := []string{}
+				for x := 0; x < len((*gameboard)[head.y]); x++ {
+					new_cols = append(new_cols, ".")
+				}
+				new_rows = append(new_rows, new_cols)
 			}
+			*gameboard = append((*gameboard), new_rows...)
 		}
 	case "L":
 		cols := (head.x - spaces)
 		if cols < 0 {
-			draw_cols := []string{}
-			for x := 0; x < int(math.Abs(float64(cols))); x++ {
-				draw_cols = append(draw_cols, "+")
+			for i := range *gameboard {
+				new_cols := []string{}
+				for x := 0; x < int(math.Abs(float64(cols))); x++ {
+					new_cols = append(new_cols, ".")
+				}
+				(*gameboard)[i] = append(new_cols, (*gameboard)[i]...)
 			}
-			for y := 0; y < len(*(gameboard)); y++ {
-				(*gameboard)[y] = append(draw_cols, (*gameboard)[y]...)
+			for i := range *pieces {
+				(*pieces)[i].x = (*pieces)[i].x + int(math.Abs(float64(cols)))
 			}
-			head.x = head.x + int(math.Abs(float64(cols)))
-			tail.x = tail.x + int(math.Abs(float64(cols)))
 		}
 	case "R":
-		cols := (head.x + spaces) - (len((*gameboard)[head.x]) - 1)
+		cols := (head.x + spaces) - (len((*gameboard)[head.y]) - 1)
 		if cols > 0 {
-			draw_cols := []string{}
-			for x := 0; x < cols; x++ {
-				draw_cols = append(draw_cols, "+")
-			}
-			for y := 0; y < len(*(gameboard)); y++ {
-				(*gameboard)[y] = append((*gameboard)[y], draw_cols...)
+			for i := range *gameboard {
+				new_cols := []string{}
+				for x := 0; x < cols; x++ {
+					new_cols = append(new_cols, ".")
+				}
+				(*gameboard)[i] = append((*gameboard)[i], new_cols...)
 			}
 		}
 	}
+	return
 }
 
-func move_head(direction string, head *Head, gameboard *[][]string) {
-
-	switch direction {
-	case "U":
-	case "D":
-	case "L":
-	case "R":
-	}
-}
-
-func main() {
-	file, err := os.Open("../test_inputs/day9.txt")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer file.Close()
+func play_game(file *os.File, pieces int) (gameboard [][]string) {
 
 	scanner := bufio.NewScanner(file)
 
-	head := Head{
-		x: 0,
-		y: 0,
-	}
+	var game_pieces = []Piece{}
 
-	tail := Tail{
-		x: 0,
-		y: 0,
+	for piece := 0; piece < pieces; piece++ {
+		game_pieces = append(game_pieces, Piece{x: 0, y: 0})
 	}
 
 	//gameboard[y][x]
-	gameboard := [][]string{{"#"}}
+	gameboard = [][]string{{"s"}}
 
 	for scanner.Scan() {
 		action := strings.Split(scanner.Text(), " ")
@@ -114,14 +110,41 @@ func main() {
 			fmt.Println(err)
 		}
 
-		fmt.Println(direction, spaces)
-		draw_board(&head, &tail, &gameboard, direction, spaces)
+		draw_board(&game_pieces, &gameboard, direction, spaces)
 
 		for move := 0; move < spaces; move++ {
-			/*
-				TODO:
-				Build Movement
-			*/
+			tail := &game_pieces[len(game_pieces)-1]
+			switch direction {
+			case "U":
+				game_pieces[0].y--
+			case "D":
+				game_pieces[0].y++
+			case "L":
+				game_pieces[0].x--
+			case "R":
+				game_pieces[0].x++
+			}
+
+			for i := 1; i < len(game_pieces); i++ {
+
+				x_delta := game_pieces[i-1].x - game_pieces[i].x
+				y_delta := game_pieces[i-1].y - game_pieces[i].y
+
+				if math.Abs(float64(x_delta)) <= 1 && math.Abs(float64(y_delta)) <= 1 {
+					break
+				}
+				if x_delta > 0 {
+					game_pieces[i].x++
+				} else if x_delta < 0 {
+					game_pieces[i].x--
+				}
+				if y_delta > 0 {
+					game_pieces[i].y++
+				} else if y_delta < 0 {
+					game_pieces[i].y--
+				}
+			}
+			gameboard[tail.y][tail.x] = "*"
 		}
 	}
 
@@ -129,10 +152,26 @@ func main() {
 		fmt.Println(err)
 	}
 
+	return
+}
+
+func main() {
+	file, err := os.Open("../inputs/day9.txt")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer file.Close()
+
+	gameboard := play_game(file, 10)
+
+	fmt.Println()
 	for _, y := range gameboard {
 		for _, x := range y {
 			fmt.Printf("%s", x)
 		}
 		fmt.Println()
 	}
+
+	fmt.Printf("Unique Tail Pos: %d\n", calculate_tail_pos(&gameboard))
 }
